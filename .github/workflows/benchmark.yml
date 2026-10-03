@@ -21,7 +21,7 @@ jobs:
   bench:
     # all implementations run sequentially on the same runner so the numbers are comparable
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 300
     env:
       WELD_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_repo || 'https://github.com/AngeloRubens/core' }}
       # space separated <label>=<branch> list; the first one should be labelled weld-7-patched

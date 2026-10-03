@@ -10,7 +10,8 @@ import json, pathlib, sys
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "results")
 labels = sorted(p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("profile-"))
 # (patched, baseline) speed-up columns, only shown when both labels have results
-PAIRS = [("weld-7-proxy2", "weld-7.0.0"), ("weld-7-proxy2", "weld-7-reqcache"), ("weld-6-proxy2", "weld-6.0.4"),
+PAIRS = [("weld-7-main", "weld-7.0.0"), ("weld-7-proxy2", "weld-7.0.0"), ("weld-7-proxy2", "weld-7-reqcache"),
+         ("weld-6-proxy2", "weld-6.0.4"), ("weld-6-proxy2", "weld-6-reqcache"),
          ("weld-7-patched", "weld-7.0.0"), ("weld-6-patched", "weld-6.0.4")]
 
 
