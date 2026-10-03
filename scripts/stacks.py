@@ -13,15 +13,16 @@ for line in open(path):
     stack, _, n = line.rpartition(" ")
     n = int(n)
     total += n
-    frames = stack.split(";")
+    frames = [f.replace("/", ".") for f in stack.split(";")]
     for f in set(frames):
         incl[f] += n
     self_[frames[-1]] += n
 print(f"#### {path} ({total} samples)\n")
 print("| inclusive % | self % | frame |\n|---:|---:|---|")
 for f, n in incl.most_common(top * 3):
-    if f.startswith(("java.lang.Thread.run", "org.openjdk.jmh.runner", "java.util.concurrent", "jdk.internal.reflect",
-                     "java.lang.reflect", "org.openjdk.jmh.generated", "[")) or "FutureTask" in f:
+    if (f.startswith(("java.lang.Thread.run", "org.openjdk.jmh.runner", "java.util.concurrent", "jdk.internal.reflect",
+                     "java.lang.reflect", "java.lang.invoke", "java.lang.Thread", "org.openjdk.jmh", "["))
+            or "jmh_generated" in f or "FutureTask" in f):
         continue
     print(f"| {100*n/total:.1f} | {100*self_[f]/total:.1f} | `{f}` |")
     top -= 1

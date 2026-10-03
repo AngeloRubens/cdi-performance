@@ -24,7 +24,8 @@ jobs:
     timeout-minutes: 150
     env:
       WELD_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_repo || 'https://github.com/AngeloRubens/core' }}
-      WELD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_ref || 'perf/client-proxy' }}
+      # space separated <label>=<branch> list; the first one should be labelled weld-7-patched
+      WELD_REFS: ${{ github.event_name == 'workflow_dispatch' && format('weld-7-patched={0}', inputs.weld_ref) || 'weld-7-patched=perf/client-proxy' }}
       QUICK: ${{ inputs.quick == true || github.ref == 'refs/heads/ci/bench-quick' }}
     steps:
       - uses: actions/checkout@v4
@@ -39,13 +40,14 @@ jobs:
           mvn -v
           nproc
           lscpu | grep 'Model name'
+          # optional override of the patched branches to compare, one <label>=<branch> per line
+          if [ "${{ github.event_name }}" = push ] && [ -f .github/weld-refs ]; then
+            echo "WELD_REFS=$(tr '\n' ' ' < .github/weld-refs)" >> "$GITHUB_ENV"
+          fi
           if [ "$QUICK" = true ]; then
             echo "LEGACY=0" >> "$GITHUB_ENV"; echo "BOOT=0" >> "$GITHUB_ENV"; echo "THREADS=1" >> "$GITHUB_ENV"
+            echo "JMH_THROUGHPUT=-f 2 -wi 2 -w 1s -i 4 -r 1s" >> "$GITHUB_ENV"
           fi
-      - name: Build patched Weld (${{ env.WELD_REF }})
-        if: env.WELD_REPO != ''
-        continue-on-error: true
-        run: echo "PATCHED_WELD=$(scripts/build-weld.sh "$WELD_REPO" "$WELD_REF" | tail -1)" >> "$GITHUB_ENV"
       - name: OpenWebBeans 4.1.1 (CDI 4.1)
         run: scripts/bench.sh owb-4.1.1 -POWB -Dowb.version=4.1.1
       - name: Weld 6.0.4.Final (CDI 4.1)
@@ -53,9 +55,9 @@ jobs:
         run: scripts/bench.sh weld-6.0.4 -PWeld -Dweld.version=6.0.4.Final
       - name: Weld 7.0.0.Final (CDI 5.0)
         run: scripts/bench.sh weld-7.0.0 -PWeld -Dweld.version=7.0.0.Final
-      - name: Weld patched (${{ env.PATCHED_WELD }})
-        if: env.PATCHED_WELD != ''
-        run: scripts/bench.sh weld-7-patched -PWeld -Dweld.version=$PATCHED_WELD
+      - name: Weld patched (${{ env.WELD_REFS }})
+        if: env.WELD_REPO != ''
+        run: scripts/bench-patched.sh "$WELD_REPO" "$WELD_REFS"
       - name: Report
         if: always()
         run: scripts/report.py results | tee -a "$GITHUB_STEP_SUMMARY" > results/REPORT.md
