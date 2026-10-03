@@ -1,4 +1,3 @@
-weld-7-a=bench/a
-weld-7-a2=bench/a2
-weld-7-c=bench/c
 weld-7-patched=perf/client-proxy
+weld-6-patched=perf/client-proxy-6.0
+weld-7-reqcache=perf/request-cache
