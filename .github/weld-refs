@@ -1,3 +1,4 @@
 weld-7-patched=perf/client-proxy
 weld-6-patched=perf/client-proxy-6.0
 weld-7-reqcache=perf/request-cache
+weld-6-reqcache=perf/request-cache-6.0
