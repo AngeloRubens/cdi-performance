@@ -54,7 +54,11 @@ too; the realistic number for applications with interceptors is `applicationScop
 
 `-prof gc`: `methodIntercepted` 152 B → 64 B per call, `methodNotIntercepted` → 0 B.
 
-Full run with all variants: FULL_RUN_LINK (filled in the report).
+Full run, all variants on one runner (2 forks × 5 iterations): https://github.com/AngeloRubens/cdi-performance/actions/runs/37141471463
+— applicationScoped 187.1 → 327.1 (no interception in use) / 187.4 → 199.3 (interception in use), requestScoped
+106.4 → 135.8, methodIntercepted 14.9 → 16.8, methodNotIntercepted 38.6 → 46.5 ops/µs; 4 threads:
+methodNotIntercepted 35.6 → 118.4, applicationScoped 432.5 → 670.2. An unpatched `main` snapshot performs like
+7.0.0.Final (x0.97–1.01), so the upstream commits after the tag do not explain any gain.
 
 ## Testing
 

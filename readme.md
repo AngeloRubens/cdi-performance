@@ -99,26 +99,35 @@ JMH version (`at.struct.cdi.performance.jmh.CdiBenchmark`, results consumed by a
 implementation sequentially on the same GitHub runner (`.github/workflows/benchmark.yml`, `scripts/bench.sh`,
 `scripts/report.py`). It can also build and benchmark patched Weld branches (`.github/weld-refs`, `scripts/bench-patched.sh`).
 
-JDK 21, ubuntu-latest runner, Weld SE / OWB SE, ops/µs (higher is better), 1 thread, 2 forks × 5 iterations.
-Run: https://github.com/AngeloRubens/cdi-performance/actions/runs/37113133484
+JDK 21, ubuntu-latest runner, Weld SE / OWB SE, ops/µs (higher is better), 1 thread, 2 forks × 5 iterations, all
+columns on the same runner. Run: https://github.com/AngeloRubens/cdi-performance/actions/runs/37141471463
 
-| benchmark | OWB 4.1.1 | Weld 6.0.4 | Weld 7.0.0 | Weld 7 patched¹ | Weld 7 patched + request cache² | Weld 6 patched¹ |
-|---|---|---|---|---|---|---|
-| applicationScoped | 979.3 ± 8.5 | 25.0 ± 0.1 | 25.0 ± 0.2 | 244.0 ± 2.1 | 244.4 ± 1.4 | 244.8 ± 1.3 |
-| requestScoped | 99.8 ± 1.6 | 12.5 ± 0.1 | 12.9 ± 0.1 | 26.2 ± 0.0 | 132.7 ± 0.2 | 22.5 ± 2.7 |
-| classIntercepted | 12.8 ± 0.0 | 8.8 ± 0.2 | 8.8 ± 0.1 | 19.2 ± 0.2 | 17.5 ± 2.9 | 19.3 ± 0.2 |
-| methodIntercepted | 12.9 ± 0.2 | 8.8 ± 0.1 | 8.9 ± 0.1 | 19.5 ± 0.3 | 19.5 ± 0.6 | 19.4 ± 0.2 |
-| methodNotIntercepted | 696.5 ± 4.5 | 12.3 ± 0.1 | 12.4 ± 0.1 | 50.9 ± 0.7 | 50.5 ± 0.2 | 47.8 ± 5.0 |
-| fireEvent | 4.4 ± 0.0 | 55.1 ± 1.7 | 55.0 ± 1.6 | 51.8 ± 3.3 | 55.4 ± 2.0 | 51.3 ± 7.4 |
-| boot + shutdown (ms, lower is better) | 34.5 ± 2.6 | 34.7 ± 2.5 | 31.7 ± 2.0 | 32.6 ± 2.0 | 32.9 ± 2.5 | 32.5 ± 2.4 |
+| benchmark | OWB 4.1.1 | Weld 6.0.4 | Weld 7.0.0 | Weld 7 main (unpatched) | Weld 7 request-cache¹ | Weld 7 proxy-2² | Weld 6 proxy-2² |
+|---|---|---|---|---|---|---|---|
+| applicationScoped | 718.9 ± 2.3 | 19.8 ± 0.7 | 19.8 ± 0.8 | 19.1 ± 1.6 | 187.1 ± 0.5 | 327.1 ± 6.3 | 326.9 ± 4.1 |
+| applicationScoped, interception used³ | 717.4 ± 4.6 | 20.4 ± 0.2 | 20.0 ± 0.3 | 19.9 ± 1.1 | 187.4 ± 0.3 | 199.3 ± 1.1 | 199.7 ± 0.5 |
+| applicationScoped, no interceptors³ | 717.6 ± 2.6 | 20.5 ± 0.0 | 20.2 ± 0.1 | 20.4 ± 0.5 | 187.4 ± 0.6 | 325.0 ± 6.3 | 324.9 ± 1.5 |
+| requestScoped | 90.8 ± 1.8 | 10.4 ± 0.1 | 10.5 ± 0.1 | 10.6 ± 0.0 | 106.4 ± 0.6 | 135.8 ± 8.7 | 141.2 ± 0.6 |
+| classIntercepted | 10.1 ± 0.3 | 7.1 ± 0.0 | 7.1 ± 0.0 | 7.1 ± 0.0 | 15.9 ± 0.1 | 16.5 ± 0.2 | 17.1 ± 0.4 |
+| methodIntercepted | 9.7 ± 0.6 | 7.1 ± 0.0 | 7.1 ± 0.2 | 7.1 ± 0.0 | 14.9 ± 0.1 | 16.8 ± 0.7 | 16.7 ± 0.1 |
+| methodNotIntercepted | 505.2 ± 0.9 | 9.3 ± 0.6 | 9.7 ± 0.1 | 9.6 ± 0.0 | 38.6 ± 0.1 | 46.5 ± 0.1 | 46.3 ± 0.3 |
+| fireEvent | 3.1 ± 0.0 | 44.8 ± 1.9 | 43.5 ± 0.1 | 43.5 ± 0.2 | 43.4 ± 0.1 | 42.9 ± 1.1 | 43.4 ± 0.1 |
+| boot + shutdown (ms, lower is better) | 46.2 ± 2.3 | 47.7 ± 3.6 | 45.5 ± 2.8 | 46.6 ± 2.8 | 45.4 ± 3.3 | 50.7 ± 3.1 | 47.3 ± 3.0 |
 
-¹ prototype branches `perf/client-proxy` / `perf/client-proxy-6.0` of https://github.com/AngeloRubens/core
-  (no empty interception-context stack per call, no `ThreadLocal.remove()` churn, no registry lookup per call).
-² `perf/request-cache`: additionally enables Weld's `RequestScopedCache` for the unbound request context.
-  These patches are experimental and not (yet) part of any Weld release.
+Prototype branches of https://github.com/AngeloRubens/core, not part of any Weld release:
+¹ `perf/request-cache`: no empty interception-context stack per call, no `ThreadLocal.remove()` churn, no registry
+  lookup per call (`perf/client-proxy`), plus Weld's `RequestScopedCache` for the unbound request context.
+² `perf/proxy-2` / `perf/proxy-2-6.0`: additionally a reused per-thread interception stack, a `SwitchPoint` that
+  skips the thread-local lookup in client proxies until any interception context was ever used, and a shortcut to
+  the bean's contextual-instance strategy.
+³ `CdiNoInterceptorBenchmark`: a container without interceptors/decorators, and the regular deployment after one
+  intercepted call. `CdiBenchmark.applicationScoped` never invokes an intercepted method in its JVM, so it behaves
+  like the no-interceptor case for proxy-2.
 
-Findings: OWB's `@ApplicationScoped` proxy caches the contextual instance in the proxy and is still ~4x faster than
-the patched Weld (and ~40x faster than released Weld). Released Weld spent most of a client proxy invocation
-creating and removing a thread-local interception context stack (168 B allocated per call); with the patches
-Weld is faster than OWB for intercepted methods and, with the request cache, for `@RequestScoped` beans.
-Weld's event delivery is ~12x faster than OWB's in this benchmark.
+Findings: released Weld spends most of a client proxy invocation creating and removing a thread-local
+interception-context stack (168 B per call). With the prototypes Weld is faster than OWB for intercepted methods and
+`@RequestScoped` beans and 2.2x (no interception in use) to 3.6x (interception in use) slower for
+`@ApplicationScoped`, whose OWB proxy caches the instance without invalidation. `methodNotIntercepted` stays ~11x
+slower because Weld deliberately suppresses interception of self-invocations from non-intercepted methods (see
+`docs/weld-self-invocation-redesign.md`). Weld's event delivery is ~14x faster than OWB's here. The unpatched
+Weld `main` snapshot performs like 7.0.0.Final.
