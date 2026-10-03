@@ -42,3 +42,22 @@ Weld CI copy (JDK 21) on the fork, all green:
 * `perf/request-cache-6.0`: https://github.com/AngeloRubens/core/actions/runs/37113764340 — same counts, 0 failures/errors.
 
 The 6.0 CI workflow has no "CDI Signature Test" job, so none was run there. JDK 17/25 not run.
+
+---
+
+# DRAFT – Second backport for the `6.0` branch (interception context) — not submitted
+
+**Source branch:** https://github.com/AngeloRubens/core/tree/perf/proxy-2-6.0 (on top of `perf/request-cache-6.0`;
+drop the `[fork-only]` commit). The three commits of the 7.x draft `weld-pr-proxy-2-draft.md` cherry-picked without
+conflicts:
+
+1. Reuse a per-thread `InterceptionDecorationContext` stack (holder `Object[]`, strong while non-empty, weak otherwise).
+2. Skip the thread-local lookup in client proxies until an interception context has ever been used
+   (`SwitchPoint`-guarded constant `MethodHandle`; Java 7+ API, fine for the Java 17 baseline of 6.0).
+3. `ContextBeanInstance` goes straight to the `RIBean`'s `ContextualInstanceStrategy`.
+
+**Testing:** https://github.com/AngeloRubens/core/actions/runs/37141452229 — all green: 2807 tests w/o container
+(8 skipped), 1811 in-container, CDI TCK 1903 + SE 34, relaxed 4697, examples, SE-Servlet. (The 6.0 CI has no
+signature-test job.)
+
+**Benchmarks:** see the full run linked in the report (`weld-6-proxy2` vs `weld-6-reqcache` vs `weld-6.0.4`).
