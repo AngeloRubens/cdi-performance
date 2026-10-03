@@ -9,7 +9,15 @@ import json, pathlib, sys
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "results")
 labels = sorted(p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("profile-"))
-PAIRS = [("weld-7-patched", "weld-7.0.0"), ("weld-6-patched", "weld-6.0.4")]
+# (patched, baseline) speed-up columns, only shown when both labels have results
+PAIRS = [("weld-7-proxy2", "weld-7.0.0"), ("weld-7-proxy2", "weld-7-reqcache"), ("weld-6-proxy2", "weld-6.0.4"),
+         ("weld-7-patched", "weld-7.0.0"), ("weld-6-patched", "weld-6.0.4")]
+
+
+def key(benchmark):
+    # CdiBenchmark.x -> x (as in older reports), CdiNoInterceptorBenchmark.x -> NoInterceptor.x
+    cls, method = benchmark.rsplit(".", 2)[-2:]
+    return method if cls == "CdiBenchmark" else cls.replace("Cdi", "").replace("Benchmark", "") + "." + method
 
 def impl(label):
     return label.split("-", 1)[0]
@@ -18,7 +26,7 @@ def load(label, name):
     f = root / label / name
     if not f.exists():
         return {}
-    return {r["benchmark"].rsplit(".", 1)[1]: r["primaryMetric"] for r in json.loads(f.read_text())}
+    return {key(r["benchmark"]): r["primaryMetric"] for r in json.loads(f.read_text())}
 
 out = []
 for name, title, higher_better in [("jmh-t1.json", "Throughput, 1 thread (ops/µs, higher is better)", True),

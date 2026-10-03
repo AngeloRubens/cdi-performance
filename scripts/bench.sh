@@ -4,7 +4,7 @@
 # env:   LEGACY=0      skip the legacy TestNG loop test
 #        BOOT=0        skip the boot/shutdown benchmark
 #        THREADS="1 4" thread counts for the throughput benchmarks
-#        BENCH=regex   JMH benchmark selection (default: all throughput benchmarks)
+#        BENCH=regex   JMH benchmark selection (default: all throughput benchmarks of CdiBenchmark and CdiNoInterceptorBenchmark)
 #        JMH_THROUGHPUT="-f 2 -wi 3 -w 2s -i 5 -r 2s"
 set -euo pipefail
 label=$1; shift
@@ -23,7 +23,7 @@ cp="target/classes:$(cat target/cp.txt)"
 mvn -B -ntp -q dependency:list -DexcludeTransitive=false -DincludeScope=runtime "$@" -DoutputFile="$(pwd)/$out/dependencies.txt" || true
 
 JMH_THROUGHPUT=${JMH_THROUGHPUT:--f 2 -wi 3 -w 2s -i 5 -r 2s}
-BENCH=${BENCH:-'CdiBenchmark\.(?!bootAndShutdown)'}
+BENCH=${BENCH:-'Cdi(NoInterceptor)?Benchmark\.(?!bootAndShutdown)'}
 for t in ${THREADS:-1 4}; do
   java -cp "$cp" org.openjdk.jmh.Main "$BENCH" \
        $JMH_THROUGHPUT -t $t -rf json -rff "$out/jmh-t$t.json"
