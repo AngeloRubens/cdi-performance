@@ -13,7 +13,7 @@ on:
         description: 'Branch of the patched Weld'
         default: 'perf/client-proxy'
       quick:
-        description: 'Quick mode: JMH only, 1 thread, no Weld 6 / legacy / boot'
+        description: 'Quick mode: JMH only, 1 thread, shorter iterations, no legacy / boot'
         type: boolean
         default: false
 
@@ -51,7 +51,6 @@ jobs:
       - name: OpenWebBeans 4.1.1 (CDI 4.1)
         run: scripts/bench.sh owb-4.1.1 -POWB -Dowb.version=4.1.1
       - name: Weld 6.0.4.Final (CDI 4.1)
-        if: env.QUICK != 'true'
         run: scripts/bench.sh weld-6.0.4 -PWeld -Dweld.version=6.0.4.Final
       - name: Weld 7.0.0.Final (CDI 5.0)
         run: scripts/bench.sh weld-7.0.0 -PWeld -Dweld.version=7.0.0.Final
