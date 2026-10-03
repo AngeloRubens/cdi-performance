@@ -24,7 +24,7 @@ cp="target/classes:$(cat target/cp.txt)"
 mvn -B -ntp -q dependency:list -DexcludeTransitive=false -DincludeScope=runtime "$@" -DoutputFile="$(pwd)/$out/dependencies.txt" || true
 
 JMH_THROUGHPUT=${JMH_THROUGHPUT:--f 2 -wi 3 -w 2s -i 5 -r 2s}
-BENCH=${BENCH:-'Cdi(NoInterceptor)?Benchmark\.(?!bootAndShutdown)'}
+BENCH=${BENCH:-'Cdi(NoInterceptor)?Benchmark\.(applicationScoped|applicationScopedInterceptionUsed|requestScoped|methodIntercepted|methodNotIntercepted)$'}
 # multi-threaded runs only for CdiBenchmark (keeps the full run within the job timeout)
 BENCH_MT=${BENCH_MT:-'CdiBenchmark\.(?!bootAndShutdown)'}
 for t in ${THREADS:-1 4}; do

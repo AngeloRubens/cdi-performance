@@ -46,7 +46,7 @@ jobs:
           fi
           if [ "$QUICK" = true ]; then
             echo "LEGACY=0" >> "$GITHUB_ENV"; echo "BOOT=0" >> "$GITHUB_ENV"; echo "THREADS=1" >> "$GITHUB_ENV"
-            echo "JMH_THROUGHPUT=-f 2 -wi 2 -w 1s -i 4 -r 1s" >> "$GITHUB_ENV"
+            echo "JMH_THROUGHPUT=-f 3 -wi 2 -w 1s -i 4 -r 1s" >> "$GITHUB_ENV"
           fi
       - name: OpenWebBeans 4.1.1 (CDI 4.1)
         run: scripts/bench.sh owb-4.1.1 -POWB -Dowb.version=4.1.1
