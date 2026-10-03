@@ -2,7 +2,8 @@ name: CDI benchmark
 
 on:
   push:
-    branches: [ jakarta-2026 ]
+    # jakarta-2026: full run; ci/bench-quick: quick run (both also benchmark the patched Weld branch)
+    branches: [ jakarta-2026, ci/bench-quick ]
   workflow_dispatch:
     inputs:
       weld_repo:
@@ -24,6 +25,7 @@ jobs:
     env:
       WELD_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_repo || 'https://github.com/AngeloRubens/core' }}
       WELD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_ref || 'perf/client-proxy' }}
+      QUICK: ${{ inputs.quick == true || github.ref == 'refs/heads/ci/bench-quick' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -37,16 +39,17 @@ jobs:
           mvn -v
           nproc
           lscpu | grep 'Model name'
-          if [ "${{ inputs.quick }}" = true ]; then
+          if [ "$QUICK" = true ]; then
             echo "LEGACY=0" >> "$GITHUB_ENV"; echo "BOOT=0" >> "$GITHUB_ENV"; echo "THREADS=1" >> "$GITHUB_ENV"
           fi
       - name: Build patched Weld (${{ env.WELD_REF }})
         if: env.WELD_REPO != ''
+        continue-on-error: true
         run: echo "PATCHED_WELD=$(scripts/build-weld.sh "$WELD_REPO" "$WELD_REF" | tail -1)" >> "$GITHUB_ENV"
       - name: OpenWebBeans 4.1.1 (CDI 4.1)
         run: scripts/bench.sh owb-4.1.1 -POWB -Dowb.version=4.1.1
       - name: Weld 6.0.4.Final (CDI 4.1)
-        if: inputs.quick != true
+        if: env.QUICK != 'true'
         run: scripts/bench.sh weld-6.0.4 -PWeld -Dweld.version=6.0.4.Final
       - name: Weld 7.0.0.Final (CDI 5.0)
         run: scripts/bench.sh weld-7.0.0 -PWeld -Dweld.version=7.0.0.Final
