@@ -60,4 +60,4 @@ conflicts:
 (8 skipped), 1811 in-container, CDI TCK 1903 + SE 34, relaxed 4697, examples, SE-Servlet. (The 6.0 CI has no
 signature-test job.)
 
-**Benchmarks:** https://github.com/AngeloRubens/cdi-performance/actions/runs/37141471463 — vs `perf/request-cache-6.0`: applicationScoped 187.1 → 326.9, interception used 187.5 → 199.7, requestScoped 106.5 → 141.2, methodIntercepted 15.4 → 16.7, methodNotIntercepted 38.5 → 46.3 ops/µs (same as 7.x).
+**Benchmarks:** https://github.com/AngeloRubens/cdi-performance/actions/runs/37141471463 — vs `perf/request-cache-6.0`: applicationScoped 186.8 → 326.9, interception used 187.5 → 199.7, requestScoped 106.5 → 141.2, methodIntercepted 15.4 → 16.7, methodNotIntercepted 38.5 → 46.3 ops/µs (same as 7.x).
