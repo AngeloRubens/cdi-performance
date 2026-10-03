@@ -16,9 +16,12 @@
  */
 package at.struct.cdi.performance;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.context.control.RequestContextController;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.se.SeContainer;
+import jakarta.enterprise.inject.se.SeContainerInitializer;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,9 +31,6 @@ import at.struct.cdi.performance.beans.MethodInterceptedBean;
 import at.struct.cdi.performance.beans.SimpleApplicationScopedBeanWithoutInterceptor;
 import at.struct.cdi.performance.beans.SimpleRequestScopedBeanWithoutInterceptor;
 import at.struct.cdi.performance.events.MySimpleEvent;
-import org.apache.deltaspike.cdise.api.CdiContainer;
-import org.apache.deltaspike.cdise.api.CdiContainerLoader;
-import org.apache.deltaspike.cdise.api.ContextControl;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -63,20 +63,19 @@ public class CdiPerformanceTest
     private static int NUM_THREADS = 100;
     private static int NUM_ITERATION=1000000;
 
-    private volatile CdiContainer cdiContainer;
+    private volatile SeContainer cdiContainer;
 
     @BeforeClass
     public void init()
     {
-        cdiContainer = CdiContainerLoader.getCdiContainer();
-        cdiContainer.boot();
+        cdiContainer = SeContainerInitializer.newInstance().initialize();
         System.out.println("\n\n");
     }
 
     @AfterClass
     public void shutdown()
     {
-        cdiContainer.shutdown();
+        cdiContainer.close();
 
         System.out.println("\n\n");
     }
@@ -124,10 +123,10 @@ public class CdiPerformanceTest
     public void testRequestScopedBeanPerformance() throws InterruptedException
     {
         final SimpleRequestScopedBeanWithoutInterceptor underTest = getInstance(cdiContainer.getBeanManager(), SimpleRequestScopedBeanWithoutInterceptor.class);
-        final ContextControl contextControl = cdiContainer.getContextControl();
-        contextControl.startContext(RequestScoped.class);
+        final RequestContextController contextControl = cdiContainer.select(RequestContextController.class).get();
+        contextControl.activate();
         Assert.assertEquals(underTest.theMeaningOfLife(), 42);
-        contextControl.stopContext(RequestScoped.class);
+        contextControl.deactivate();
 
         executeInParallel("invocation on @RequestScoped bean", new Runnable()
         {
@@ -135,13 +134,15 @@ public class CdiPerformanceTest
             @Override
             public void run()
             {
-                contextControl.startContext(RequestScoped.class);
+                // RequestContextController is @Dependent and bound to the activating thread
+                RequestContextController contextControl = cdiContainer.select(RequestContextController.class).get();
+                contextControl.activate();
                 for (int i = 0; i < NUM_ITERATION; i++)
                 {
                     // this line does the actual bean invocation.
                     underTest.theMeaningOfLife();
                 }
-                contextControl.stopContext(RequestScoped.class);
+                contextControl.deactivate();
             }
         });
     }
@@ -207,7 +208,7 @@ public class CdiPerformanceTest
     public void testEventPerformance() throws Exception
     {
         final MySimpleEvent simpleEvent = new MySimpleEvent();
-        final BeanManager beanManager = cdiContainer.getBeanManager();
+        final Event<MySimpleEvent> event = cdiContainer.getBeanManager().getEvent().select(MySimpleEvent.class);
 
         executeInParallel("event observer", new Runnable()
         {
@@ -217,7 +218,7 @@ public class CdiPerformanceTest
                 int iterations = NUM_ITERATION/5;
                 for (int i = 0; i < iterations; i++)
                 {
-                    beanManager.fireEvent(simpleEvent);
+                    event.fire(simpleEvent);
                 }
             }
         });

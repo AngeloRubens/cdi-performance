@@ -14,20 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.struct.cdi.performance.events;
+package at.struct.cdi.performance.beans;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
  */
 @ApplicationScoped
-public class MySimpleEventObserver
+public class SimpleApplicationScopedBeanWithoutInterceptor
 {
+    private AtomicLong count = new AtomicLong(0);
 
-    public void observeEvent(@Observes MySimpleEvent mse)
+    public int theMeaningOfLife()
     {
-        // we do nothing...
+        //X comment this in if you like to see if this really got invoked count.incrementAndGet();
+        return 42;
+    }
+
+    public AtomicLong getCount()
+    {
+        return count;
     }
 }

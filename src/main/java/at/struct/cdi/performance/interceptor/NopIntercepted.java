@@ -14,21 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.struct.cdi.performance.beans;
+package at.struct.cdi.performance.interceptor;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.interceptor.InterceptorBinding;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ * Interceptor annotation for an interceptor which does nothing
+ * but just routes straight through to the intercepted instance.
+ *
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
  */
-@ApplicationScoped
-public class ApplicationScopedHolder
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@InterceptorBinding
+public @interface NopIntercepted
 {
-    private @Inject SimpleApplicationScopedBeanWithoutInterceptor simpleBeanWithoutInterceptor;
-
-    public SimpleApplicationScopedBeanWithoutInterceptor getSimpleBeanWithoutInterceptor()
-    {
-        return simpleBeanWithoutInterceptor;
-    }
 }

@@ -16,25 +16,19 @@
  */
 package at.struct.cdi.performance.beans;
 
-import javax.enterprise.context.ApplicationScoped;
-import java.util.concurrent.atomic.AtomicLong;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
  */
 @ApplicationScoped
-public class SimpleApplicationScopedBeanWithoutInterceptor
+public class ApplicationScopedHolder
 {
-    private AtomicLong count = new AtomicLong(0);
+    private @Inject SimpleApplicationScopedBeanWithoutInterceptor simpleBeanWithoutInterceptor;
 
-    public int theMeaningOfLife()
+    public SimpleApplicationScopedBeanWithoutInterceptor getSimpleBeanWithoutInterceptor()
     {
-        //X comment this in if you like to see if this really got invoked count.incrementAndGet();
-        return 42;
-    }
-
-    public AtomicLong getCount()
-    {
-        return count;
+        return simpleBeanWithoutInterceptor;
     }
 }

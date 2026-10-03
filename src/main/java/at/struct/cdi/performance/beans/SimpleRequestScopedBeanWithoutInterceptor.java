@@ -16,7 +16,7 @@
  */
 package at.struct.cdi.performance.beans;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

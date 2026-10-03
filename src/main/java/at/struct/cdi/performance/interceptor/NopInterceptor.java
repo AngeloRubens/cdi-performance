@@ -14,23 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.struct.cdi.performance.beans;
+package at.struct.cdi.performance.interceptor;
 
-import javax.enterprise.context.ApplicationScoped;
-
-import at.struct.cdi.performance.interceptor.NopIntercepted;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 /**
+ * Interceptor which does just route straight through the intercepted instance.
+ * this interceptor is just to bench the performance impact of the interceptor
+ * framework of the CDI container itself.
+ *
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
  */
-@ApplicationScoped
+@Interceptor
 @NopIntercepted
-public class ClassInterceptedBean
+public class NopInterceptor
 {
-    private static Integer ANSWER = Integer.valueOf(42);
 
-    public Integer getMeaningOfLife()
+    @AroundInvoke
+    public Object doNothing(InvocationContext ic) throws Exception
     {
-        return ANSWER;
+        return ic.proceed();
     }
 }

@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.struct.cdi.performance.interceptor;
+package at.struct.cdi.performance.events;
 
-import javax.interceptor.InterceptorBinding;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 /**
- * Interceptor annotation for an interceptor which does nothing
- * but just routes straight through to the intercepted instance.
- *
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
-@InterceptorBinding
-public @interface NopIntercepted
+@ApplicationScoped
+public class MySimpleEventObserver
 {
+
+    public void observeEvent(@Observes MySimpleEvent mse)
+    {
+        // we do nothing...
+    }
 }

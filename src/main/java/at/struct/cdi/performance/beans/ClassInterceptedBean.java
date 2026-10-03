@@ -16,7 +16,7 @@
  */
 package at.struct.cdi.performance.beans;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import at.struct.cdi.performance.interceptor.NopIntercepted;
 
@@ -24,20 +24,13 @@ import at.struct.cdi.performance.interceptor.NopIntercepted;
  * @author <a href="mailto:struberg@yahoo.de">Mark Struberg</a>
  */
 @ApplicationScoped
-public class MethodInterceptedBean
+@NopIntercepted
+public class ClassInterceptedBean
 {
     private static Integer ANSWER = Integer.valueOf(42);
-    private static Integer HALF = Integer.valueOf(21);
 
-    @NopIntercepted
     public Integer getMeaningOfLife()
     {
         return ANSWER;
-    }
-
-    // this method is not intercepted
-    public Integer getMeaningOfHalfLife()
-    {
-        return HALF;
     }
 }

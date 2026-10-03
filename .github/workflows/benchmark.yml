@@ -1,0 +1,39 @@
+name: CDI benchmark
+
+on:
+  push:
+    branches: [ jakarta-2026 ]
+  workflow_dispatch:
+
+jobs:
+  bench:
+    # all implementations run sequentially on the same runner so the numbers are comparable
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Environment
+        run: |
+          java -version
+          mvn -v
+          nproc
+          lscpu | grep 'Model name'
+      - name: OpenWebBeans 4.1.1 (CDI 4.1)
+        run: scripts/bench.sh owb-4.1.1 -POWB -Dowb.version=4.1.1
+      - name: Weld 6.0.4.Final (CDI 4.1)
+        run: scripts/bench.sh weld-6.0.4 -PWeld -Dweld.version=6.0.4.Final
+      - name: Weld 7.0.0.Final (CDI 5.0)
+        run: scripts/bench.sh weld-7.0.0 -PWeld -Dweld.version=7.0.0.Final
+      - name: Report
+        if: always()
+        run: scripts/report.py results | tee -a "$GITHUB_STEP_SUMMARY" > results/REPORT.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: results/
