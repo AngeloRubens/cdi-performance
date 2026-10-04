@@ -1,6 +1,4 @@
-weld-7-reqcache=perf/request-cache
-weld-7-p2a-e=bench/p2-e
-weld-7-p2b-eg=bench/p2-eg
-weld-7-p2c-ef=bench/p2-f
-weld-7-p2d-ef2=bench/p2-f2
-weld-7-p2e-ef2g=bench/p2-f2g
+weld-7-p2=bench/p2-f2g
+weld-7-p3a=bench/p3-a
+weld-7-p2-r=bench/p2-f2g
+weld-7-p3a-r=bench/p3-a
