@@ -10,7 +10,7 @@ on:
         default: 'https://github.com/AngeloRubens/core'
       weld_ref:
         description: 'Branch of the patched Weld'
-        default: 'perf/proxy-2'
+        default: 'perf/proxy-3'
       benchmarks:
         description: 'JMH benchmarks to profile'
         default: 'applicationScoped requestScoped methodIntercepted methodNotIntercepted'
@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      PROFILE_BENCHMARKS: ${{ inputs.benchmarks || 'applicationScoped requestScoped methodIntercepted methodNotIntercepted' }}
+      PROFILE_BENCHMARKS: ${{ inputs.benchmarks || 'methodNotIntercepted methodIntercepted applicationScopedInterceptionUsed' }}
       WELD_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_repo || 'https://github.com/AngeloRubens/core' }}
-      WELD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_ref || 'perf/proxy-2' }}
+      WELD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_ref || 'perf/proxy-3' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
