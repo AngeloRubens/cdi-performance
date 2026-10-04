@@ -1,4 +1,8 @@
-weld-7-p2=bench/p2-f2g
-weld-7-p3a=bench/p3-a
-weld-7-p2-r=bench/p2-f2g
-weld-7-p3a-r=bench/p3-a
+weld-7-p3=bench/p3-a
+weld-7-p4-1=bench/p4-1
+weld-7-p4-2a=bench/p4-2a
+weld-7-p4-2b=bench/p4-2b
+weld-7-p4-3a=bench/p4-3a
+weld-7-p4-3b=bench/p4-3b
+weld-7-p3-r=bench/p3-a
+weld-7-p4-3b-r=bench/p4-3b
