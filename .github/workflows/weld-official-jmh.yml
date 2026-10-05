@@ -52,7 +52,7 @@ jobs:
           echo "Runner: $(uname -a)" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Java: $(java -version 2>&1 | head -1); Maven: $(mvn -version | head -1); CPUs: $(nproc)" | tee -a "$GITHUB_STEP_SUMMARY"
           case "$WELD_VERSION" in
-            7.0) expected_version:'7.0.' ;;
+            7.0) expected_version='7.0.' ;;
             6.0) expected_version='6.0.' ;;
             *) echo "Unsupported Weld line: $WELD_VERSION" >&2; exit 2 ;;
           esac
