@@ -1,0 +1,109 @@
+name: Weld official JMH comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      weld_version:
+        description: Weld branch line to benchmark
+        required: true
+        type: choice
+        options: ["7.0", "6.0"]
+      base_ref:
+        description: Base branch in the Weld repository
+        required: true
+        type: string
+        default: main
+      pr_ref:
+        description: PR branch in the Weld repository
+        required: true
+        type: string
+        default: pr/proxy4-main
+      benchmarks:
+        description: Official Weld JMH benchmark selectors
+        required: true
+        type: string
+        default: "InterceptorBenchmark DecoratorBenchmark"
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build Weld base and PR, then run Weld's JMH suite
+        env:
+          WELD_VERSION: ${{ inputs.weld_version }}
+          BASE_REF: ${{ inputs.base_ref }}
+          PR_REF: ${{ inputs.pr_ref }}
+          BENCHMARKS: ${{ inputs.benchmarks }}
+        run: |
+          set -euo pipefail
+          results="$RUNNER_TEMP/weld-jmh-results"
+          source="$RUNNER_TEMP/weld-core"
+          benchmarks="$RUNNER_TEMP/weld-core-benchmarks"
+          mkdir -p "$results"
+          git clone https://github.com/AngeloRubens/core.git "$source"
+          git clone --depth 1 https://github.com/weld/weld-core-benchmarks.git "$benchmarks"
+          echo "Runner: $(uname -a)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Java: $(java -version 2>&1 | head -1); Maven: $(mvn -version | head -1); CPUs: $(nproc)" | tee -a "$GITHUB_STEP_SUMMARY"
+          case "$WELD_VERSION" in
+            7.0) expected_version:'7.0.' ;;
+            6.0) expected_version='6.0.' ;;
+            *) echo "Unsupported Weld line: $WELD_VERSION" >&2; exit 2 ;;
+          esac
+          run_benchmarks() {
+            label="$1"
+            ref="$2"
+            git -C "$source" fetch --depth 1 origin "$ref"
+            git -C "$source" checkout --detach FETCH_HEAD
+            commit="$(git -C "$source" rev-parse HEAD)"
+            version="$(cd "$source" && mvn -q help:evaluate -Dexpression=project.version -DforceStdout)"
+            case "$version" in
+              "$expected_version"*) ;;
+              *) echo "Ref $ref resolved to unexpected Weld version $version" >&2; exit 3 ;;
+            esac
+            echo "### $label: Weld $version ($ref, $commit)" | tee -a "$GITHUB_STEP_SUMMARY"
+            (cd "$source" && mvn -B -ntp -DskipTests -Dno-format -pl environments/se/core -am install)
+            (cd "$benchmarks" && ./run-benchmarks.sh -m 'mvn -B -ntp' -v "$version" -b "$BENCHMARKS" -o "$results/report-$label")
+            cp "$benchmarks/target/results-$version.json" "$results/$label.json"
+          }
+          run_benchmarks base "$BASE_REF"
+          run_benchmarks pr "$PR_REF"
+          python3 - "$results" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          summary_path = pathlib.Path(sys.argv[2])
+          base = json.loads((root / 'base.json').read_text())
+          pr = json.loads((root / 'pr.json').read_text())
+          before = {item['benchmark']: item['primaryMetric'] for item in base}
+          after = {item['benchmark']: item['primaryMetric'] for item in pr}
+          rows = []
+          for name in sorted(set(before) & set(after)):
+              a, b = before[name], after[name]
+              av, bv = a['score'] / 1_000_000, b['score'] / 1_000_000
+              delta = bv - av
+              pct = (bv / av - 1) * 100 if av else 0
+              ae = a.get('scoreError', 0) / 1_000_000
+              be = b.get('scoreError', 0) / 1_000_000
+              rows.append((name.rsplit('.', 1)[-1], av, ae, bv, be, delta, pct))
+          with summary_path.open('a') as out:
+              out.write('\n### Base versus PR throughput\n\n')
+              out.write('JMH operations per second, shown in millions. For interceptor/decorator benchmarks, one operation is one intercepted/decorated CDI bean invocation, not an HTTP request. `±` is JMH score error.\n\n')
+              out.write('| Benchmark | Base (M ops/s) | PR (M ops/s) | Additional (M ops/s) | Change |\n|---|---:|---:|---:|---:|\n')
+              for name, av, ae, bv, be, delta, pct in rows:
+                  out.write(f'| {name} | {av:.2f} ± {ae:.2f} | {bv:.2f} ± {be:.2f} | {delta:+.2f} | {pct:+.1f}% |\n')
+              if not rows:
+                  out.write('No matching benchmarks were found in both result files. Check selector names and job logs.\n')
+          (root / 'comparison.md').write_text(summary_path.read_text())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weld-official-jmh-${{ inputs.weld_version }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/weld-jmh-results/
+          if-no-files-found: error
+          retention-days: 30
