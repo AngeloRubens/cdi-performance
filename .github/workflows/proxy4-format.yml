@@ -1,0 +1,43 @@
+name: Proxy-4 format and focused tests
+on:
+  push:
+    branches: [ci/proxy4-format]
+  workflow_dispatch:
+jobs:
+  format-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 7
+            ref: 3e139bc0bbab3aeec64eb2f6a453da5dec80e550
+          - version: 6
+            ref: a0dcb169cfb21230dcd1bae2ef8c250ffe0a5608
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: AngeloRubens/core
+          ref: ${{ matrix.ref }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Format changed sources with the Weld formatter
+        run: mvn -B -ntp -pl impl -am formatter:format impsort:sort
+      - name: Save formatting patch
+        if: always()
+        run: git diff --binary > formatting.patch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weld-${{ matrix.version }}-formatting
+          path: formatting.patch
+      - name: Run invoker and thread-stack regressions
+        run: mvn -B -ntp -pl impl -am -Dno-format -Dtest=MethodInvokerTest,InterceptionDecorationContextTest -Dsurefire.failIfNoSpecifiedTests=false test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weld-${{ matrix.version }}-focused-tests
+          path: impl/target/surefire-reports/
