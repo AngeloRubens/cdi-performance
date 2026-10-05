@@ -50,7 +50,7 @@ jobs:
           git clone https://github.com/AngeloRubens/core.git "$source"
           git clone --depth 1 https://github.com/weld/weld-core-benchmarks.git "$benchmarks"
           # Current Weld exposes CDI selection directly on WeldContainer; adapt the older harness API call.
-          sed -i 's/containerState.getContainer().instance().select(/containerState.getContainer().select(/' "$benchmarks/src/main/java/org/jboss/weld/benchmark/core/BaseBenchmark.java"
+          sed -i 's/containerState.getContainer().select(/containerState.getContainer().select(/' "$benchmarks/src/main/java/org/jboss/weld/benchmark/core/BaseBenchmark.java"
           git -C "$benchmarks" diff -- src/main/java/org/jboss/weld/benchmark/core/BaseBenchmark.java | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Runner: $(uname -a)" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "Java: $(java -version 2>&1 | head -1); Maven: $(mvn -version | head -1); CPUs: $(nproc)" | tee -a "$GITHUB_STEP_SUMMARY"
