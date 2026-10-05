@@ -19,15 +19,23 @@ on:
 
 jobs:
   bench:
-    # all implementations run sequentially on the same runner so the numbers are comparable
+    # Each thread count compares all implementations sequentially on its own runner.
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        threads: ${{ fromJSON((inputs.quick == true || github.ref == 'refs/heads/ci/bench-quick') && '[1]' || '[1,4]') }}
     env:
+      THREADS: ${{ matrix.threads }}
+      # Run legacy/boot once, alongside the single-thread comparison.
+      LEGACY: ${{ matrix.threads == 1 && '1' || '0' }}
+      BOOT: ${{ matrix.threads == 1 && '1' || '0' }}
       WELD_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_repo || 'https://github.com/AngeloRubens/core' }}
       # space separated <label>=<branch> list; the first one should be labelled weld-7-patched
       WELD_REFS: ${{ github.event_name == 'workflow_dispatch' && format('weld-7-patched={0}', inputs.weld_ref) || 'weld-7-patched=perf/client-proxy' }}
       # Longer multi-threaded measurements to reduce the noise seen in proxy-3.
-      JMH_THROUGHPUT_MT: '-f 3 -wi 5 -w 2s -i 10 -r 2s'
+      JMH_THROUGHPUT_MT: '-f 3 -wi 3 -w 2s -i 7 -r 2s'
       QUICK: ${{ inputs.quick == true || github.ref == 'refs/heads/ci/bench-quick' }}
     steps:
       - uses: actions/checkout@v4
@@ -65,5 +73,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: benchmark-results
+          name: benchmark-results-t${{ matrix.threads }}
           path: results/
