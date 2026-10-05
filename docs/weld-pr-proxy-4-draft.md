@@ -1,17 +1,21 @@
-# Draft: Reduce overhead of around-invoke interception
+# Reduce interception invocation overhead: PRs opened
 
-Status: not ready to submit. Final CI and performance validation are pending; see [the status report](weld-proxy-4-status.md).
+The changes and performance tables are now in the upstream PRs:
 
-Repeated invocations of an intercepted method currently perform reflective dispatch, interception-chain lookup and per-call context/argument allocation. This candidate caches the first method chain per handler, reuses initialized chain checks, reduces context and empty-argument allocations, and reuses the creator thread's interception stack when proceeding on that thread. Other threads retain their own stack lookup.
+- [Weld 7, #3545](https://github.com/weld/core/pull/3545), target `main`.
+- [Weld 6 backport, #3546](https://github.com/weld/core/pull/3546), target `6.0`.
 
-The candidate also caches MethodHandle invokers with reflective fallback and preserves argument conversions and InvocationTargetException wrapping. A cached privileged handle cannot authorize a Method whose accessibility override is absent or revoked. Whether to retain MethodHandles is pending the attribution benchmark; the initial isolated measurement showed no significant gain. LambdaMetafactory remains a separate experiment.
+Each PR includes the prerequisite client-proxy, proxy-2 and proxy-3 changes, because none of those series is upstream yet. Fork-only CI workflow commits are excluded.
 
-The Weld 6 backport preserves its WeldInvocationContext/context-data behavior. Changes build on proxy-3; fork-only CI commits must be excluded from an upstream submission.
+## Measured gains
 
-Validation pending for the corrected candidate:
+Throughput in ops/µs, same-runner proxy-3 → proxy-4 comparison, one thread:
 
-- Full Weld tests and CDI TCK on both versions.
-- Regression tests for access-override changes and cross-thread stack reuse.
-- Complete same-runner benchmark, longer four-thread measurements and boot/shutdown comparison.
+| benchmark | Weld 7 | gain | Weld 6 | gain |
+|---|---:|---:|---:|---:|
+| method interception | 18.18 → **33.63** | **+85%** | 18.46 → **33.19** | **+80%** |
+| class interception | 18.65 → **33.60** | **+80%** | 18.65 → **32.72** | **+75%** |
 
-The recovered earlier incremental run improved methodIntercepted from 22.39 to 28.32 ops/µs before stack reuse and the access correction. These numbers must not be presented as measurements of the final candidate.
+Four-thread method-interception point estimates also rise (Weld 7 +383%, Weld 6 +104%), but both measurements have wide intervals. Other single-thread scenarios remain within measurement noise. Cold startup with the first intercepted calls shows no clear regression.
+
+The PR bodies include the full timing intervals and the links to CI, full benchmarks, allocation profiling and cold-start measurements. The complete recovery report is [here](weld-proxy-4-status.md).

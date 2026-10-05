@@ -137,4 +137,4 @@ than OWB's here.
 
 ## Proxy-4 work in progress
 
-The interceptor optimization candidate and Weld 6 backport await final CI and benchmark validation. See the [recovery status and measured incremental results](docs/weld-proxy-4-status.md) and [draft PR](docs/weld-pr-proxy-4-draft.md). Existing proxy-3 results above remain the last completed comparison.
+Proxy-4 is ready for review in [Weld 7 PR #3545](https://github.com/weld/core/pull/3545) and [Weld 6 PR #3546](https://github.com/weld/core/pull/3546). Both full CI runs and the complete benchmark passed. See the [performance table and recovery report](docs/weld-proxy-4-status.md) and [PR overview](docs/weld-pr-proxy-4-draft.md).

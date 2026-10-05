@@ -1,85 +1,108 @@
-# Weld proxy-4: ripresa del lavoro di Claude (5 ottobre 2026)
+# Weld proxy-4: invocazione degli interceptor (ottobre 2026)
 
-**Stato: candidato preparato, validazione finale bloccata dalla rete. Non pronto per upstream.**
-Il report distingue gli esiti recuperati dagli artifact locali dalle verifiche ancora da eseguire.
+## Candidato
 
-## Stato recuperato
+Ripresa e completamento del quarto giro lasciato da Claude. Codice e backport sono completati, le CI e i benchmark sono verdi e le due PR upstream sono aperte.
 
-Claude aveva completato sei modifiche su Weld 7 e il relativo backport Weld 6:
+| versione | branch | commit |
+|---|---|---|
+| Weld 7 | perf/proxy-4 | 045e4fc14e7f947967569353742a69d42535928b |
+| Weld 6 | perf/proxy-4-6.0 | 9c00639608a654a25454a533cc1bbbdc2413c0da |
 
-1. `MethodInvoker`: MethodHandle con fallback alla reflection, conversioni controllate e mantenimento di InvocationTargetException.
-2. Percorso rapido per catene già inizializzate, senza ripetere i controlli di accessibilità e di interceptor sul target.
-3. Cache della prima catena intercettata per istanza, con fallback alla ConcurrentHashMap.
-4. Rimozione dei campi timer e constructor inutilizzati dai contesti around-invoke.
-5. Array vuoto condiviso per gli argomenti dei metodi senza parametri.
-6. Riuso dello stack durante proceed() sul thread proprietario; lookup normale sugli altri thread.
+## Modifiche
 
-Il backport **era già completato**, benché l'ultima notifica riportasse ancora la risoluzione dei conflitti.
-L'esperimento LambdaMetafactory è separato (`p4-wip`, `perf/proxy-4-lmf`, tag `bench/p4-5`): non promosso senza i risultati del confronto.
+1. Invoker condivisi per classe tramite ClassValue: MethodHandle adattati, conversioni controllate, fallback alla reflection, eccezioni del metodo avvolte in InvocationTargetException.
+2. LambdaMetafactory per metodi di istanza con ritorno non-void e zero parametri o un parametro di riferimento. Le Function/BiFunction ottenute possono essere inlined dal JIT; se il lookup non riesce restano handle o reflection.
+3. Percorso rapido per una catena già inizializzata e cache della prima catena per istanza, con fallback alla ConcurrentHashMap per gli altri metodi. Inizializzazioni concorrenti possono scegliere catene diverse ma valide.
+4. Campi timer/constructor rimossi dal contesto around-invoke; il costruttore resta nel contesto around-construct. Array vuoto degli argomenti condiviso.
+5. proceed() riusa lo stack sul thread proprietario. Su un altro thread continua a usare il lookup dello stack di quel thread.
 
-## Risultati incrementali recuperati
+Non cambia intenzionalmente la semantica della self-invocation. Il backport Weld 6 conserva WeldInvocationContext e il suo context data con gli interceptor bindings.
 
-Fonte: artifact locale del [run 37204192518](https://github.com/AngeloRubens/cdi-performance/actions/runs/37204192518).
-Tre fork, quattro misure da un secondo, un thread; throughput ops/µs. Ogni confronto vale solo all'interno di questo runner.
+## Correzione durante la ripresa
 
-| variante | methodIntercepted | classIntercepted | methodNotIntercepted |
+Method.equals() non distingue il flag di accessibilità. Un handle creato da un Method con setAccessible(true) poteva essere riusato per un Method uguale senza quell'override, o dopo setAccessible(false). Il percorso con handle/lambda verifica ora l'override quando necessario, altrimenti passa alla reflection e ai suoi controlli.
+
+Aggiunti test per copie di Method con accessibilità diversa, revoca dell'override, invocazioni senza argomenti e con argomento singolo/array, e riuso dello stack sullo stesso thread o su un altro thread.
+
+## Evidenza incrementale
+
+Primo run [37204192518](https://github.com/AngeloRubens/cdi-performance/actions/runs/37204192518): tre fork, quattro misure da un secondo, un thread. I soli MethodHandle non mostrano un guadagno significativo; cache e allocazioni portano methodIntercepted da 22,39 ± 0,46 a 28,32 ± 0,47 ops/µs (+26,5%). Le metriche sono salvate in `weld-proxy-4-incremental-results.json` con hash dei JSON originali.
+
+Secondo run [37205424057](https://github.com/AngeloRubens/cdi-performance/actions/runs/37205424057), su un runner diverso dal primo:
+
+| variante | methodIntercepted A | ripetizione B | classIntercepted A | ripetizione B |
+|---|---:|---:|---:|---:|
+| stack riusato + reflection | 22,59 ± 0,93 | 22,75 ± 0,45 | 22,85 ± 0,67 | 21,49 ± 1,83 |
+| stack riusato + MethodHandle | 23,87 ± 1,51 | 24,58 ± 0,35 | 24,61 ± 0,30 | 24,37 ± 0,18 |
+| stack riusato + lambda | 34,88 ± 1,05 | 33,93 ± 0,61 | 35,04 ± 1,80 | 34,62 ± 1,27 |
+
+Questo confronto giustifica mantenere la specializzazione lambda. Non si devono confrontare i valori assoluti tra i due run. La copia delle metriche del secondo è `weld-proxy-4-attribution-results.json`. Entrambi i run precedono la correzione dell'accessibilità; il confronto finale misura i commit corretti.
+
+## Validazione finale
+
+- [Test mirati + formatter, 37281149853](https://github.com/AngeloRubens/cdi-performance/actions/runs/37281149853): **10 test per versione, zero failure/error/skip**, JDK 17. Sorgenti formattati nel runner, patch recuperata e committata.
+- [Weld 7 test e TCK, 37281293309](https://github.com/AngeloRubens/core/actions/runs/37281293309): **successo, tutti i job verdi**.
+- [Weld 6 test e TCK, 37281293013](https://github.com/AngeloRubens/core/actions/runs/37281293013): **successo, tutti i job verdi**.
+- [Benchmark completo, 37281326000](https://github.com/AngeloRubens/cdi-performance/actions/runs/37281326000): **successo**, un runner per thread count, tutte le varianti sequenziali.
+- [Profilazione, 37281324917](https://github.com/AngeloRubens/cdi-performance/actions/runs/37281324917): **successo**, SHA Weld verificato nel log: 045e4fc.
+- [Avvio a freddo, 37281596417](https://github.com/AngeloRubens/cdi-performance/actions/runs/37281596417): **successo**, 10 JVM nuove per variante.
+
+I primi run della ripresa, 37280824427 e 37280825043, si sono fermati sulla formattazione di una riga del guard di accessibilità, prima di compilare. Corretti con l'output del formatter ufficiale eseguito in CI. Il benchmark 37281004627 è stato annullato per sostituire gli SHA non formattati con quelli finali.
+
+## Metodo di misura
+
+- Throughput 1 thread: 2 fork, 3 warmup da 2 s, 5 misure da 2 s.
+- Throughput 4 thread: 3 fork, 3 warmup da 2 s, 7 misure da 2 s (più campioni rispetto al giro precedente).
+- Ogni numero di thread ha un proprio runner; tutte le implementazioni di quel confronto girano sequenzialmente sullo stesso runner. Non si deduce lo scaling 1→4 confrontando macchine diverse.
+- Baseline: OWB 4.1.1, Weld 7.0.0 e 6.0.4; proxy-3 e proxy-4 per Weld 7 e 6. Gli SHA Weld sono fissati in .github/weld-refs e registrati nei log di build.
+- Boot/shutdown riscaldato: 3 fork, 10 warmup, 20 misure single-shot.
+- Avvio a freddo: 10 JVM nuove per scenario e implementazione, zero warmup, una misura single-shot per JVM. Uno scenario include le prime chiamate a entrambi i bean intercettati, per includere creazione di handle/lambda e catene.
+- Profilazione: GC per B/op e async-profiler; numeri di throughput del profiling separati dal confronto senza profiler.
+
+## Profilazione del candidato finale
+
+Su methodIntercepted, `gc.alloc.rate.norm` è **0,0008 ± 0,0221 B/op**, cioè sostanzialmente zero nel benchmark monomorfico misurato. Proxy-3 aveva circa 64 B/op nel precedente profilo; Weld 7.0.0 nel nuovo run ha circa 400 B/op. L'inlining reso possibile dalle lambda è coerente con l'eliminazione del contesto da parte dell'escape analysis; non è una garanzia per ogni interceptor.
+
+Il throughput con profiler GC è 32,71 ops/µs sul metodo intercettato, 61,49 sul metodo non intercettato e 199,75 su applicationScopedInterceptionUsed. Non sostituisce il confronto senza profiler.
+
+Campionamento CPU, percentuali self approssimative:
+
+- metodo intercettato: MethodInvoker.invoke 17,7%, getStack 12,9%, Stack.push 7,6%, controllo argomenti 7,1%; le lambda compaiono nel profilo;
+- metodo non intercettato: push 18,2%, getStack 16,7%, activeStack 16%, ThreadLocalMap.getEntry 12,1%; resta il costo dello stack/lookup;
+- applicationScopedInterceptionUsed: activeStack 36,3%, client proxy 26%; invariato l'obiettivo di questa serie.
+
+Le metriche GC complete sono in `weld-proxy-4-profile-results.json` e i flamegraph nell'artifact `profiles` del run.
+
+## Risultato finale del benchmark
+
+| miglioramento | proxy-3 | proxy-4 | differenza |
 |---|---:|---:|---:|
-| proxy-3 | 22,39 ± 0,46 | 22,43 ± 0,59 | 70,10 ± 0,13 |
-| soli MethodHandle (p4-1) | 22,56 ± 0,08 | 22,45 ± 0,55 | 69,97 ± 0,18 |
-| + controlli in cache (p4-2a) | 23,00 ± 0,30 | 22,86 ± 0,39 | 69,30 ± 0,81 |
-| + prima catena in cache (p4-2b) | 26,52 ± 0,25 | 26,30 ± 0,61 | 70,00 ± 0,09 |
-| + contesto più piccolo (p4-3a) | 27,03 ± 0,32 | 27,32 ± 0,44 | 69,91 ± 0,34 |
-| + array vuoto condiviso (p4-3b) | 28,32 ± 0,47 | 28,43 ± 0,25 | 69,76 ± 0,46 |
-| ripetizione p4-3b | 28,12 ± 0,23 | 28,03 ± 0,41 | 67,85 ± 2,87 |
+| Weld 7, methodIntercepted, 1 thread | 18,18 ± 0,35 | **33,63 ± 0,31** | **+85%** |
+| Weld 7, classIntercepted, 1 thread | 18,65 ± 0,44 | **33,60 ± 0,07** | **+80%** |
+| Weld 6, methodIntercepted, 1 thread | 18,46 ± 0,64 | **33,19 ± 0,68** | **+80%** |
+| Weld 6, classIntercepted, 1 thread | 18,65 ± 0,29 | **32,72 ± 0,26** | **+75%** |
+| Weld 7, methodIntercepted, 4 thread | 21,07 ± 6,54 | **101,73 ± 14,42** | +383%* |
+| Weld 6, methodIntercepted, 4 thread | 27,25 ± 18,19 | **55,60 ± 27,00** | +104%* |
 
-Il miglioramento p4-3b rispetto alla prima misura proxy-3 è circa **26,5%** su methodIntercepted.
-I soli MethodHandle non mostrano un vantaggio significativo. Il secondo confronto (run 37205424057) deve stabilire se conservarli e valutare LambdaMetafactory e riuso dello stack.
-I dati di questo primo run NON misurano la correzione di accessibilità aggiunta durante la ripresa.
-La copia strutturata delle metriche, con hash SHA-256 dei JSON originali, è in `docs/weld-proxy-4-incremental-results.json`.
+Ops/µs, JMH 99,9% CI. *Le misure a quattro thread hanno intervalli molto ampi: i guadagni a un thread sono il risultato più solido. Gli altri scenari singolo-thread restano nei limiti del rumore; in particolare methodNotIntercepted è stabile. Dati completi nell'artifact del run 37281326000.
 
-## CI recuperata dai log della sessione
+| Avvio a freddo, intercettato | proxy-3 | proxy-4 | differenza |
+|---|---:|---:|---:|
+| Weld 7, ms/container | 686,49 ± 34,12 | 688,85 ± 15,61 | +0,3% |
+| Weld 6, ms/container | 679,43 ± 19,46 | 691,57 ± 16,62 | +1,8% |
 
-- Weld 6, [37204455985](https://github.com/AngeloRubens/core/actions/runs/37204455985), commit `deac986`: tutti gli otto job completati positivamente, inclusi TCK, relaxed mode e test in-container.
-- Weld 7, [37204452905](https://github.com/AngeloRubens/core/actions/runs/37204452905), commit `861e2b0`: otto job verdi nel log; relaxed mode ancora in corso all'ultima lettura. Esito finale non recuperato.
-- Benchmark incrementale 2: [37205424057](https://github.com/AngeloRubens/cdi-performance/actions/runs/37205424057), risultato non recuperato.
-- Esperimento LambdaMetafactory: push registrato, esito CI non recuperato.
+Nessuna regressione distinguibile dal rumore in dieci fork/JVM nuove. I JSON sono in `weld-proxy-4-cold-start-results.json`.
 
-Questi esiti precedono le nuove correzioni; non costituiscono validazione degli HEAD attuali.
+## Pull request upstream aperte
 
-## Correzioni della ripresa
+- [Weld 7, PR #3545](https://github.com/weld/core/pull/3545), target `main`.
+- [Backport Weld 6, PR #3546](https://github.com/weld/core/pull/3546), target `6.0`.
 
-**Accessibilità:** la cache usa Method.equals(), che non distingue il flag setAccessible(). Un handle creato per un Method con accesso forzato poteva essere riutilizzato per un Method uguale senza quel permesso, oppure dopo setAccessible(false). Ora, se l'handle era stato creato con controlli soppressi, il percorso rapido richiede che il Method passato abbia ancora quell'override; altrimenti usa la reflection e i suoi controlli.
+Poiché le serie client-proxy/proxy-2/proxy-3 non erano ancora upstream, ciascuna PR contiene la catena necessaria, senza i workflow `[fork-only]`. Entrambe riportano le tabelle dei guadagni e i link alle CI.
 
-Aggiunti due test per accesso revocato e copie di Method, coprendo invocazioni senza argomenti, con argomento singolo e con array. Aggiunti due test per stack riusato sul thread proprietario e passaggio a un altro thread. Corretto il commento della cache della prima catena: inizializzazioni concorrenti possono scrivere catene diverse, sempre valide; non è una scrittura garantita una sola volta.
+## Limiti
 
-- Weld 7: `perf/proxy-4`, commit `5c6a9f4cc8b8bbdfa6d893d320de89ab850725aa`.
-- Weld 6: `perf/proxy-4-6.0`, commit `0ab95263c14c4851a476b1be8b817cf59458cbfc`.
-- Entrambi sono commit locali, non ancora pubblicati.
+I benchmark usano poche classi e call site prevalentemente monomorfici. Non dimostrano guadagni identici su molteplici tipi di interceptor, metodi con firme differenti o applicazioni reali. LambdaMetafactory dipende dagli accessi di modulo/lookup e ha un costo alla prima invocazione; dove non applicabile rimane il fallback. L'allocazione osservata dipende dall'escape analysis del JIT.
 
-## Benchmark completo preparato
-
-In cdi-performance, branch `jakarta-2026`:
-
-- refs fissate ai commit di proxy-3 e proxy-4, Weld 7 e 6;
-- versioni rilasciate Weld 7.0.0, Weld 6.0.4 e OWB 4.1.1 mantenute dal workflow;
-- supporto al fetch di commit esatti in build-weld.sh;
-- misure a quattro thread: 3 fork, 5 warmup da 2 s, 10 misure da 2 s;
-- boot/shutdown e benchmark completi a un thread restano inclusi;
-- colonne proxy-4/proxy-3 e proxy-4/versione rilasciata nel report;
-- errori di build o benchmark delle varianti propagate allo stato del job, continuando a raccogliere gli altri risultati.
-
-## Verifiche e lavoro restante
-
-Eseguiti i controlli locali di whitespace e sintassi shell. Test Java, build Weld, TCK e benchmark finali restano da eseguire in CI, coerentemente con il flusso precedente.
-
-La sessione non risolve api.github.com; gh e curl falliscono. Il profilo dell'ambiente vieta l'escalation della sandbox, indipendentemente dal consenso espresso nella chat.
-
-Per chiudere:
-
-1. Ripristinare l'accesso di rete e recuperare CI Weld 7, confronto 37205424057 e CI LambdaMetafactory.
-2. Scegliere la variante sulla base dei dati: conservare i MethodHandle solo se giustificati, senza promuovere automaticamente l'esperimento LambdaMetafactory.
-3. Pubblicare i due branch corretti sul fork AngeloRubens/core e verificarne test/TCK sugli SHA esatti.
-4. Pubblicare jakarta-2026 sul fork AngeloRubens/cdi-performance per avviare il confronto completo. Se cambia il candidato, aggiornare prima gli SHA in .github/weld-refs.
-5. Verificare tempi di boot, quattro thread e regressioni negli altri scenari; aggiornare questo report e la bozza PR con i risultati effettivi.
-
-Nessun ticket o PR upstream è stato aperto.
+I test mirati/build usano JDK 17, i test completi/TCK JDK 21. JDK 25 non eseguita. I commit fork-only della CI sono esclusi dalle PR. I maintainer possono ora valutare la catena completa; JDK 25 non è inclusa nella matrice eseguita.
