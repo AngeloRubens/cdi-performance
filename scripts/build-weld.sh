@@ -5,7 +5,11 @@ set -euo pipefail
 repo=$1; ref=$2
 dir=${WELD_SRC:-$RUNNER_TEMP/weld-src}
 rm -rf "$dir"
-git clone -q --depth 1 --branch "$ref" "$repo" "$dir"
+# Fetch also accepts an exact commit, so benchmark inputs need not move with a branch.
+git init -q "$dir"
+git -C "$dir" remote add origin "$repo"
+git -C "$dir" fetch -q --depth 1 origin "$ref"
+git -C "$dir" checkout -q --detach FETCH_HEAD
 (cd "$dir" && git log -1 --format='weld source: %H %s' >&2 \
    && mvn -B -ntp -q install -DskipTests -Dno-format -pl environments/se/core -am >&2)
 (cd "$dir" && mvn -B -ntp -q help:evaluate -Dexpression=project.version -DforceStdout)

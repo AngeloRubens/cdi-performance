@@ -134,3 +134,7 @@ interception-context stack (168 B per call). With the prototypes Weld is faster 
 slower because Weld deliberately suppresses interception of self-invocations from non-intercepted methods (see
 `docs/weld-self-invocation-redesign.md`); proxy-3 makes that path 30 % faster. Weld's event delivery is ~14x faster
 than OWB's here.
+
+## Proxy-4 work in progress
+
+The interceptor optimization candidate and Weld 6 backport await final CI and benchmark validation. See the [recovery status and measured incremental results](docs/weld-proxy-4-status.md) and [draft PR](docs/weld-pr-proxy-4-draft.md). Existing proxy-3 results above remain the last completed comparison.

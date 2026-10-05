@@ -7,6 +7,7 @@
 #        BENCH=regex   JMH benchmark selection (default: all throughput benchmarks of CdiBenchmark and CdiNoInterceptorBenchmark)
 #        BENCH_MT=regex selection for the runs with more than 1 thread (default: CdiBenchmark only)
 #        JMH_THROUGHPUT="-f 2 -wi 3 -w 2s -i 5 -r 2s"
+#        JMH_THROUGHPUT_MT=... optional longer settings for multi-threaded measurements
 set -euo pipefail
 label=$1; shift
 out=results/$label
@@ -28,9 +29,14 @@ BENCH=${BENCH:-'Cdi(NoInterceptor)?Benchmark\.(?!bootAndShutdown)'}
 # multi-threaded runs only for CdiBenchmark (keeps the full run within the job timeout)
 BENCH_MT=${BENCH_MT:-'CdiBenchmark\.(?!bootAndShutdown)'}
 for t in ${THREADS:-1 4}; do
-  sel=$BENCH; [ "$t" != 1 ] && sel=$BENCH_MT
+  sel=$BENCH
+  throughput=$JMH_THROUGHPUT
+  if [ "$t" != 1 ]; then
+    sel=$BENCH_MT
+    throughput=${JMH_THROUGHPUT_MT:-$JMH_THROUGHPUT}
+  fi
   java -cp "$cp" org.openjdk.jmh.Main "$sel" \
-       $JMH_THROUGHPUT -t $t -rf json -rff "$out/jmh-t$t.json"
+       $throughput -t $t -rf json -rff "$out/jmh-t$t.json"
 done
 if [ "${BOOT:-1}" = 1 ]; then
   java -cp "$cp" org.openjdk.jmh.Main 'CdiBenchmark\.bootAndShutdown' \

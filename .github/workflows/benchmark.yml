@@ -26,6 +26,8 @@ jobs:
       WELD_REPO: ${{ github.event_name == 'workflow_dispatch' && inputs.weld_repo || 'https://github.com/AngeloRubens/core' }}
       # space separated <label>=<branch> list; the first one should be labelled weld-7-patched
       WELD_REFS: ${{ github.event_name == 'workflow_dispatch' && format('weld-7-patched={0}', inputs.weld_ref) || 'weld-7-patched=perf/client-proxy' }}
+      # Longer multi-threaded measurements to reduce the noise seen in proxy-3.
+      JMH_THROUGHPUT_MT: '-f 3 -wi 5 -w 2s -i 10 -r 2s'
       QUICK: ${{ inputs.quick == true || github.ref == 'refs/heads/ci/bench-quick' }}
     steps:
       - uses: actions/checkout@v4
