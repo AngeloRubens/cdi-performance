@@ -68,7 +68,7 @@ jobs:
               *) echo "Ref $ref resolved to unexpected Weld version $version" >&2; exit 3 ;;
             esac
             echo "### $label: Weld $version ($ref, $commit)" | tee -a "$GITHUB_STEP_SUMMARY"
-            (cd "$source" && mvn -B -ntp -DskipTests -Dno-format -pl environments/se/core -am install)
+            (cd "$source" && mvn -B -ntp -DskipTests -Dno-format -pl environments/se/build -am install)
             (cd "$benchmarks" && ./run-benchmarks.sh -m 'mvn -B -ntp' -v "$version" -b "$BENCHMARKS" -o "$results/report-$label")
             cp "$benchmarks/target/results-$version.json" "$results/$label.json"
           }
