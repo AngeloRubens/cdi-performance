@@ -98,3 +98,5 @@ Weld 6 con il backport ha gli stessi guadagni.
 - **Aperte upstream il 9 ottobre 2026:** https://github.com/weld/core/pull/3552 (`main`, stacked su #3545) e https://github.com/weld/core/pull/3553 (`6.0`, stacked su #3546). 19 commit ciascuna; da rivedere solo gli ultimi 2.
 
 **Testo di #3545 e #3546 corretto** il 9 ottobre 2026: la riga che attribuiva a Matej Novotny OWB e il benchmark ora cita il port Jakarta di `cdi-performance` di Mark Struberg. Nota: `gh pr edit` fallisce (token senza `read:org`); usare `gh api -X PATCH repos/weld/core/pulls/N -F body=@file`.
+
+**Nota su Jakarta REST e request cache:** in un servlet container (WildFly, Tomcat/Jetty + Weld Servlet) le richieste JAX-RS usano `HttpRequestContextImpl`, che aveva già la `RequestScopedCache`: lì #3552/#3553 non cambiano niente. Il guadagno riguarda solo il contesto unbound (`RequestContextController`, `@ActivateRequestContext`, Weld SE, ad es. JAX-RS embedded in Java SE). Non verificato: come Jersey/RESTEasy in SE attivano il contesto request con Weld SE.
