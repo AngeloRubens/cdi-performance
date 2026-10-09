@@ -81,3 +81,18 @@ Weld 6 con il backport ha gli stessi guadagni.
 3. **CI su JDK 25:** mai eseguita. Il TCK è stato eseguito solo su JDK 21.
 4. **Integrare `weld-core-benchmarks`**, come suggerito dal maintainer.
 5. **Request cache:** non è nelle PR aperte. Proporla come PR separata (bozza in `docs/weld-pr-request-cache-draft.md`), da rebasare sopra le PR attuali. Cambia la semantica più delle altre modifiche: va discussa con i maintainer.
+
+## Aggiornamento del 9 ottobre 2026 (sera)
+
+**TCK sul codice esatto delle PR:** verde.
+- Branch `perf/pr-check-main` e `perf/pr-check-6.0` = head delle PR + workflow della CI del fork.
+- Run 37904857772 (Weld 7) e 37904857540 (Weld 6).
+
+**Request cache pronta, stacked sulle PR:**
+- Branch `pr/request-cache-main` (d1fa54e) e `pr/request-cache-6.0` (6825d96) sul fork. Autore "Angelo Rubens", senza Co-Authored-By, come i commit delle PR.
+- TCK verde: run 37904858396 (Weld 7) e 37904858262 (Weld 6).
+- Benchmark: run 37904967425. requestScoped da 22.5 a 142.5 ops/µs (OWB 88).
+- Bozza pronta: `cdi-performance/docs/weld-pr-request-cache-draft.md`.
+- **Da aprire upstream dopo la conferma dell'utente.**
+
+**Da correggere nel testo della PR #3545:** dice che Matej Novotny è il "creator of OpenWebBeans" e l'autore dello scenario di benchmark. È sbagliato: OWB è un progetto Apache, il benchmark di partenza è `cdi-performance` di Mark Struberg, e manovotn è il maintainer di Weld.
