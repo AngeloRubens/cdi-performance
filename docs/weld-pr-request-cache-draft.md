@@ -1,4 +1,4 @@
-# DRAFT – Pull requests for weld/core: RequestScopedCache in the unbound request context — not submitted
+# Pull requests for weld/core: RequestScopedCache in the unbound request context — submitted 2026-10-09 as weld/core#3552 (main) and #3553 (6.0)
 
 | target | head branch (fork) | stacked on |
 |---|---|---|

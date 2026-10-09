@@ -20,10 +20,12 @@ Portare in Weld le tecniche che rendono OpenWebBeans più veloce sulle invocazio
 |---|---|---|---|
 | https://github.com/weld/core/pull/3545 | `main` (Weld 7) | `pr/proxy4-main` | 38f94f3 |
 | https://github.com/weld/core/pull/3546 | `6.0` (Weld 6) | `pr/proxy4-6.0` | 9d8a605 |
+| https://github.com/weld/core/pull/3552 | `main`, request cache, stacked su #3545 | `pr/request-cache-main` | d1fa54e |
+| https://github.com/weld/core/pull/3553 | `6.0`, request cache, stacked su #3546 | `pr/request-cache-6.0` | 6825d96 |
 
 Ogni PR contiene una catena di 17 commit (client-proxy + proxy-2 + proxy-3 + proxy-4), senza i commit `[fork-only]`.
 
-**Non include la request cache** (`perf/request-cache`, commit "Enable RequestScopedCache for the unbound request context" e "Flush RequestScopedCache…"). È ancora da proporre come PR separata.
+**#3545/#3546 non includono la request cache** (`perf/request-cache`, commit "Enable RequestScopedCache for the unbound request context" e "Flush RequestScopedCache…"). È ancora da proporre come PR separata.
 
 I commit sul fork sono stati riscritti con autore "Angelo Rubens" e senza la riga Co-Authored-By. Il contenuto è identico a quello dei branch `perf/*`.
 
@@ -80,7 +82,7 @@ Weld 6 con il backport ha gli stessi guadagni.
 2. **@ApplicationScoped con interceptor in uso** (circa 3.6x): resta una `ThreadLocal.get()` per chiamata nel client proxy.
 3. **CI su JDK 25:** mai eseguita. Il TCK è stato eseguito solo su JDK 21.
 4. **Integrare `weld-core-benchmarks`**, come suggerito dal maintainer.
-5. **Request cache:** non è nelle PR aperte. Proporla come PR separata (bozza in `docs/weld-pr-request-cache-draft.md`), da rebasare sopra le PR attuali. Cambia la semantica più delle altre modifiche: va discussa con i maintainer.
+5. **Request cache:** aperta come #3552/#3553. Cambia la semantica più delle altre modifiche: seguire la discussione con i maintainer.
 
 ## Aggiornamento del 9 ottobre 2026 (sera)
 
@@ -93,6 +95,6 @@ Weld 6 con il backport ha gli stessi guadagni.
 - TCK verde: run 37904858396 (Weld 7) e 37904858262 (Weld 6).
 - Benchmark: run 37904967425. requestScoped da 22.5 a 142.5 ops/µs (OWB 88).
 - Bozza pronta: `cdi-performance/docs/weld-pr-request-cache-draft.md`.
-- **Da aprire upstream dopo la conferma dell'utente.**
+- **Aperte upstream il 9 ottobre 2026:** https://github.com/weld/core/pull/3552 (`main`, stacked su #3545) e https://github.com/weld/core/pull/3553 (`6.0`, stacked su #3546). 19 commit ciascuna; da rivedere solo gli ultimi 2.
 
-**Da correggere nel testo della PR #3545:** dice che Matej Novotny è il "creator of OpenWebBeans" e l'autore dello scenario di benchmark. È sbagliato: OWB è un progetto Apache, il benchmark di partenza è `cdi-performance` di Mark Struberg, e manovotn è il maintainer di Weld.
+**Testo di #3545 e #3546 corretto** il 9 ottobre 2026: la riga che attribuiva a Matej Novotny OWB e il benchmark ora cita il port Jakarta di `cdi-performance` di Mark Struberg. Nota: `gh pr edit` fallisce (token senza `read:org`); usare `gh api -X PATCH repos/weld/core/pulls/N -F body=@file`.
